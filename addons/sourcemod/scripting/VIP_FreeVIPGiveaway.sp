@@ -140,22 +140,10 @@ void ChangeHostname()
 	if(playersOnServer >= minPlayers)
 	{
 		ServerCommand("hostname %s [Free VIP: Active]", hostname);
-
-		if(GetFreeNominationsTime())
-			ServerCommand("hostname [FreeNoms] %s [Free VIP: Active]", hostname);
-
-		if(GetDisableNominationsDay())
-			ServerCommand("hostname [RandomNoms] %s [Free VIP: Active]", hostname);
 	}
 	else
 	{
 		int playersNeeded = minPlayers - playersOnServer;
 		ServerCommand("hostname %s [Free VIP: +%d %s]", hostname, playersNeeded, (playersNeeded > 1) ? "players" : "player");
-
-		if(GetFreeNominationsTime())
-			ServerCommand("hostname [FreeNoms] %s [Free VIP: +%d %s]", hostname, playersNeeded, (playersNeeded > 1) ? "players" : "player");
-
-		if(GetDisableNominationsDay())
-			ServerCommand("hostname [RandomNoms] %s [Free VIP: +%d %s]", hostname, playersNeeded, (playersNeeded > 1) ? "players" : "player");
 	}
 }

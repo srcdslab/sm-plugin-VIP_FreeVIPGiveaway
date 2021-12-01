@@ -17,7 +17,7 @@ ConVar g_Cvar_VIPGroup;
 ConVar g_Cvar_TestVIPGroup;
 ConVar g_Cvar_Hostname;
 
-char sHostname[256];
+char sHostname[256] = "";
 
 public Plugin myinfo =
 {
@@ -35,8 +35,6 @@ public void OnPluginStart()
 
 	g_Cvar_Hostname = FindConVar("hostname");
 
-	g_Cvar_Hostname.GetString(sHostname, sizeof(sHostname));
-
 	RegConsoleCmd("sm_freevip", Command_FreeVIP, "Display FreeVIP Giveaway status.");
 
 	HookEvent("round_start", Event_RoundStart);
@@ -49,9 +47,16 @@ public void OnAllPluginsLoaded()
 	g_Cvar_TestVIPGroup = FindConVar("sm_vip_test_group");
 }
 
+public void OnConfigsExecuted()
+{
+	g_Cvar_Hostname.GetString(sHostname, sizeof(sHostname));
+	ServerCommand("hostname [Free VIP] %s", sHostname);
+}
+
 public void OnMapStart()
 {
-	ServerCommand("hostname [Free VIP] %s", sHostname);
+	if (sHostname[0])
+		ServerCommand("hostname [Free VIP] %s", sHostname);
 }
 
 public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
@@ -135,4 +140,5 @@ public Action Command_FreeVIP(int client, int argc)
 
 		CPrintToChat(client, "{white}Free {pink}VIP {white}Giveaway is {red}disabled{white}.\nPlayers on: {green}%d {white}| Players required: {green}%d {white}| Players needed: {green}+%d", playersOnServer, minPlayers, playersNeeded);
 	}
+	return Plugin_Handled;
 }

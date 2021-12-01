@@ -38,7 +38,7 @@ public void OnPluginStart()
 
 	HookEvent("round_start", Event_RoundStart);
 
-	AutoExecConfig(true, "FreeVIPGiveaway", "vip");
+	AutoExecConfig(true);
 }
 
 public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)

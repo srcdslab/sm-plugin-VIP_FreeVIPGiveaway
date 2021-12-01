@@ -47,7 +47,10 @@ public void OnPluginStart()
 public void OnAllPluginsLoaded()
 {
 	g_Cvar_TestVIPGroup = FindConVar("sm_vip_test_group");
-	
+}
+
+public void OnMapStart()
+{
 	ServerCommand("hostname [Free VIP] %s", sHostname);
 }
 

@@ -3,7 +3,7 @@
 #include <sourcemod>
 #include <cstrike>
 #include <vip_core>
-#include <ccc>
+#include <multicolors>
 #include <zombiereloaded>
 #include <multicolors>
 #include <mapchooser_extended>
@@ -14,15 +14,17 @@
 ConVar g_Cvar_MinPlayers;
 //ConVar g_Cvar_Duration;
 ConVar g_Cvar_VIPGroup;
-ConVar g_Cvar_Hostname;
 ConVar g_Cvar_TestVIPGroup;
+ConVar g_Cvar_Hostname;
+
+char sHostname[256];
 
 public Plugin myinfo =
 {
 	name = "[VIP] Free VIP Giveaway",
-	author = "inGame",
+	author = "inGame, maxime1907",
 	description = "Gives Free VIP for players that are active on server",
-	version = "0.1"
+	version = "1.0"
 };
 
 public void OnPluginStart()
@@ -30,9 +32,12 @@ public void OnPluginStart()
 	g_Cvar_MinPlayers = CreateConVar("sm_freevip_min_players", "55", "How many players should be on server to active Free VIP Giveaway.", FCVAR_NONE, true, 0.0, true, 64.0);
 	//g_Cvar_Duration = CreateConVar("sm_freevip_duration", "10", "For how many mins give Free VIP.", FCVAR_NONE, true, 1.0, true, 60.0);
 	g_Cvar_VIPGroup = CreateConVar("sm_freevip_group", "VIP", "What VIP group set on player");
-	g_Cvar_Hostname = CreateConVar("sm_freevip_hostname", "This Server has Free VIP Giveaway", "Hostname.");
 
-	RegConsoleCmd("freevip", Command_FreeVIP, "Display FreeVIP Giveaway status.");
+	g_Cvar_Hostname = FindConVar("hostname");
+
+	g_Cvar_Hostname.GetString(sHostname, sizeof(sHostname));
+
+	RegConsoleCmd("sm_freevip", Command_FreeVIP, "Display FreeVIP Giveaway status.");
 
 	HookEvent("round_start", Event_RoundStart);
 
@@ -42,6 +47,8 @@ public void OnPluginStart()
 public void OnAllPluginsLoaded()
 {
 	g_Cvar_TestVIPGroup = FindConVar("sm_vip_test_group");
+	
+	ServerCommand("hostname [Free VIP] %s", sHostname);
 }
 
 public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
@@ -75,7 +82,7 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 		}
 
 		// push chat message
-		MC_PrintToChatAll("{white}Free \x07D147FFVIP {white}Giveaway is {green}enabled{white}. Active players got Free \x07D147FFVIP");
+		CPrintToChatAll("{white}Free {pink}VIP {white}Giveaway is {green}enabled{white}. Active players got Free {pink}VIP");
 	}
 	else
 	{
@@ -94,13 +101,9 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 		int playersNeeded = minPlayers - playersOnServer;
 
 		// push chat message
-		MC_PrintToChatAll("{white}Free \x07D147FFVIP {white}Giveaway is {red}disabled{white}.\nPlayers on: {green}%d {white}| Players required: {green}%d {white}| Players needed: {green}+%d", playersOnServer, minPlayers, playersNeeded);
+		CPrintToChatAll("{white}Free {pink}VIP {white}Giveaway is {red}disabled{white}.\nPlayers on: {green}%d {white}| Players required: {green}%d {white}| Players needed: {green}+%d", playersOnServer, minPlayers, playersNeeded);
 	}
-
-	ChangeHostname();
 }
-
-public void OnClientPutInServer(int client) { ChangeHostname(); }
 
 public void OnClientDisconnect(int client)
 {
@@ -112,8 +115,6 @@ public void OnClientDisconnect(int client)
 
 	if(IsClientInGame(client) && VIP_IsClientVIP(client) && VIP_GetClientID(client) == -1 && !VIP_GetClientVIPGroup(client, testVipGroup, sizeof(testVipGroup)))
 		VIP_RemoveClientVIP2(_, client, false, false);
-
-	ChangeHostname();
 }
 
 public Action Command_FreeVIP(int client, int argc)
@@ -123,30 +124,12 @@ public Action Command_FreeVIP(int client, int argc)
 
 	if(playersOnServer >= minPlayers)
 	{
-		MC_PrintToChatAll("{white}Free \x07D147FFVIP {white}Giveaway is {green}enabled{white}.");
+		CPrintToChat(client, "{white}Free {pink}VIP {white}Giveaway is {green}enabled{white}.");
 	}
 	else
 	{
 		int playersNeeded = minPlayers - playersOnServer;
 
-		MC_PrintToChatAll("{white}Free \x07D147FFVIP {white}Giveaway is {red}disabled{white}.\nPlayers on: {green}%d {white}| Players required: {green}%d {white}| Players needed: {green}+%d", playersOnServer, minPlayers, playersNeeded);
-	}
-}
-
-void ChangeHostname()
-{
-	int playersOnServer = GetClientCount() - 1; // -1 cuz of sourcetv
-	int minPlayers = GetConVarInt(g_Cvar_MinPlayers);
-	char hostname[255];
-	GetConVarString(g_Cvar_Hostname, hostname, sizeof(hostname));
-
-	if(playersOnServer >= minPlayers)
-	{
-		ServerCommand("hostname %s [Free VIP: Active]", hostname);
-	}
-	else
-	{
-		int playersNeeded = minPlayers - playersOnServer;
-		ServerCommand("hostname %s [Free VIP: +%d %s]", hostname, playersNeeded, (playersNeeded > 1) ? "players" : "player");
+		CPrintToChat(client, "{white}Free {pink}VIP {white}Giveaway is {red}disabled{white}.\nPlayers on: {green}%d {white}| Players required: {green}%d {white}| Players needed: {green}+%d", playersOnServer, minPlayers, playersNeeded);
 	}
 }

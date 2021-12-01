@@ -32,13 +32,16 @@ public void OnPluginStart()
 	g_Cvar_VIPGroup = CreateConVar("sm_freevip_group", "VIP", "What VIP group set on player");
 	g_Cvar_Hostname = CreateConVar("sm_freevip_hostname", "This Server has Free VIP Giveaway", "Hostname.");
 
-	g_Cvar_TestVIPGroup = FindConVar("sm_vip_test_group");
-
 	RegConsoleCmd("freevip", Command_FreeVIP, "Display FreeVIP Giveaway status.");
 
 	HookEvent("round_start", Event_RoundStart);
 
 	AutoExecConfig(true);
+}
+
+public void OnAllPluginsLoaded()
+{
+	g_Cvar_TestVIPGroup = FindConVar("sm_vip_test_group");
 }
 
 public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)

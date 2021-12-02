@@ -49,8 +49,12 @@ public void OnAllPluginsLoaded()
 
 public void OnConfigsExecuted()
 {
-	g_Cvar_Hostname.GetString(sHostname, sizeof(sHostname));
-	ServerCommand("hostname [Free VIP] %s", sHostname);
+	if (!sHostname[0])
+	{
+		g_Cvar_Hostname.GetString(sHostname, sizeof(sHostname));
+
+		ServerCommand("hostname [Free VIP] %s", sHostname);
+	}
 }
 
 public void OnMapStart()

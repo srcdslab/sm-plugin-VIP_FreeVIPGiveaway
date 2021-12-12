@@ -104,7 +104,7 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 		}
 
 		// push chat message
-		CPrintToChatAll("{white}Free {pink}VIP {white}Giveaway is {green}enabled{white}. Active players got Free {pink}VIP");
+		CPrintToChatAll("{default}Free {pink}VIP {default}Giveaway is {green}enabled{default}. Active players got Free {pink}VIP");
 	}
 	else
 	{
@@ -123,7 +123,7 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 		int playersNeeded = minPlayers - playersOnServer;
 
 		// push chat message
-		CPrintToChatAll("{white}Free {pink}VIP {white}Giveaway is {red}disabled{white}.\nPlayers on: {green}%d {white}| Players required: {green}%d {white}| Players needed: {green}+%d", playersOnServer, minPlayers, playersNeeded);
+		CPrintToChatAll("{default}Free {pink}VIP {default}Giveaway is {red}disabled{default}.\nPlayers on: {green}%d {default}| Players required: {green}%d {default}| Players needed: {green}+%d", playersOnServer, minPlayers, playersNeeded);
 	}
 }
 
@@ -160,13 +160,13 @@ public Action Command_FreeVIP(int client, int argc)
 
 	if(playersOnServer >= minPlayers)
 	{
-		CPrintToChat(client, "{white}Free {pink}VIP {white}Giveaway is {green}enabled{white}.");
+		CPrintToChat(client, "{default}Free {pink}VIP {default}Giveaway is {green}enabled{default}.");
 	}
 	else
 	{
 		int playersNeeded = minPlayers - playersOnServer;
 
-		CPrintToChat(client, "{white}Free {pink}VIP {white}Giveaway is {red}disabled{white}.\nPlayers on: {green}%d {white}| Players required: {green}%d {white}| Players needed: {green}+%d", playersOnServer, minPlayers, playersNeeded);
+		CPrintToChat(client, "{default}Free {pink}VIP {default}Giveaway is {red}disabled{default}.\nPlayers on: {green}%d {default}| Players required: {green}%d {default}| Players needed: {green}+%d", playersOnServer, minPlayers, playersNeeded);
 	}
 	return Plugin_Handled;
 }

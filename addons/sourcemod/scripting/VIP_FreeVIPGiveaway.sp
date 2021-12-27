@@ -16,8 +16,10 @@ ConVar g_Cvar_MinPlayers;
 ConVar g_Cvar_VIPGroup;
 ConVar g_Cvar_TestVIPGroup;
 ConVar g_Cvar_Hostname;
+ConVar g_Cvar_HostNamePrefix;
 
-char sHostname[256] = "";
+char g_sHostname[256] = "";
+char g_sHostnamePrefix[256] = "";
 
 public Plugin myinfo =
 {
@@ -29,9 +31,10 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-	g_Cvar_MinPlayers = CreateConVar("sm_freevip_min_players", "55", "How many players should be on server to active Free VIP Giveaway.", FCVAR_NONE, true, 0.0, true, 64.0);
-	//g_Cvar_Duration = CreateConVar("sm_freevip_duration", "10", "For how many mins give Free VIP.", FCVAR_NONE, true, 1.0, true, 60.0);
-	g_Cvar_VIPGroup = CreateConVar("sm_freevip_group", "VIP", "What VIP group set on player");
+	g_Cvar_HostNamePrefix = CreateConVar("sm_freevip_hostname_prefix", "[Free VIP]", "Hostname prefix that will be displayed in server list");
+	g_Cvar_MinPlayers = CreateConVar("sm_freevip_min_players", "0", "How many players should be on server to active Free VIP Giveaway. [0 = OnClientConnected, 1-255 = OnRoundEnd]", FCVAR_NONE, true, 0.0, true, float(MAXPLAYERS));
+	// g_Cvar_Duration = CreateConVar("sm_freevip_duration", "0", "For how many mins give Free VIP. [0 = Unlimited, 1-60 = minutes]", FCVAR_NONE, true, 0.0, true, 60.0);
+	g_Cvar_VIPGroup = CreateConVar("sm_freevip_group", "Free_VIP", "What VIP group set on player");
 
 	g_Cvar_Hostname = FindConVar("hostname");
 
@@ -49,18 +52,20 @@ public void OnAllPluginsLoaded()
 
 public void OnConfigsExecuted()
 {
-	if (!sHostname[0])
+	if (!g_sHostname[0])
 	{
-		g_Cvar_Hostname.GetString(sHostname, sizeof(sHostname));
+		g_Cvar_HostNamePrefix.GetString(g_sHostnamePrefix, sizeof(g_sHostnamePrefix));
+		g_Cvar_Hostname.GetString(g_sHostname, sizeof(g_sHostname));
 
-		ServerCommand("hostname [Free VIP] %s", sHostname);
+		if (g_sHostname[0] && g_sHostnamePrefix[0] && StrContains(g_sHostname, g_sHostnamePrefix, true) == -1)
+			ServerCommand("hostname %s %s", g_sHostnamePrefix, g_sHostname);
 	}
 }
 
 public void OnMapStart()
 {
-	if (sHostname[0])
-		ServerCommand("hostname [Free VIP] %s", sHostname);
+	if (g_sHostname[0] && g_sHostnamePrefix[0] && StrContains(g_sHostname, g_sHostnamePrefix, true) == -1)
+		ServerCommand("hostname %s %s", g_sHostnamePrefix, g_sHostname);
 }
 
 public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
@@ -68,6 +73,11 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 	int playersOnServer = GetClientCount() - 1; // -1 cuz of sourcetv
 	int minPlayers = GetConVarInt(g_Cvar_MinPlayers);
 	//int duration = GetConVarInt(g_Cvar_Duration);
+
+	// Handled in OnClientConnect
+	if (minPlayers == 0)
+		return;
+
 	char vipGroup[16];
 	GetConVarString(g_Cvar_VIPGroup, vipGroup, sizeof(vipGroup));
 	char hostname[255];
@@ -114,6 +124,20 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 
 		// push chat message
 		CPrintToChatAll("{white}Free {pink}VIP {white}Giveaway is {red}disabled{white}.\nPlayers on: {green}%d {white}| Players required: {green}%d {white}| Players needed: {green}+%d", playersOnServer, minPlayers, playersNeeded);
+	}
+}
+
+public void OnClientPutInServer(int client)
+{
+	if (GetConVarInt(g_Cvar_MinPlayers) != 0)
+		return;
+
+	char vipGroup[16];
+	GetConVarString(g_Cvar_VIPGroup, vipGroup, sizeof(vipGroup));
+
+	if (client && IsClientInGame(client) && !IsFakeClient(client) && !VIP_IsClientVIP(client))
+	{
+		VIP_GiveClientVIP(_, client, 0, vipGroup, false);
 	}
 }
 

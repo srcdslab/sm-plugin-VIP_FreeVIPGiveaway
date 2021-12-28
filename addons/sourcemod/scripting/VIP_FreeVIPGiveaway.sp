@@ -34,7 +34,7 @@ public void OnPluginStart()
 	g_Cvar_HostNamePrefix = CreateConVar("sm_freevip_hostname_prefix", "[Free VIP]", "Hostname prefix that will be displayed in server list");
 	g_Cvar_MinPlayers = CreateConVar("sm_freevip_min_players", "0", "How many players should be on server to active Free VIP Giveaway. [0 = OnClientConnected, 1-255 = OnRoundEnd]", FCVAR_NONE, true, 0.0, true, float(MAXPLAYERS));
 	// g_Cvar_Duration = CreateConVar("sm_freevip_duration", "0", "For how many mins give Free VIP. [0 = Unlimited, 1-60 = minutes]", FCVAR_NONE, true, 0.0, true, 60.0);
-	g_Cvar_VIPGroup = CreateConVar("sm_freevip_group", "Free_VIP", "What VIP group set on player");
+	g_Cvar_VIPGroup = CreateConVar("sm_freevip_group", "VIP", "What VIP group set on player");
 
 	g_Cvar_Hostname = FindConVar("hostname");
 
@@ -74,10 +74,6 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 	int minPlayers = GetConVarInt(g_Cvar_MinPlayers);
 	//int duration = GetConVarInt(g_Cvar_Duration);
 
-	// Handled in OnClientConnect
-	if (minPlayers == 0)
-		return;
-
 	char vipGroup[16];
 	GetConVarString(g_Cvar_VIPGroup, vipGroup, sizeof(vipGroup));
 	char hostname[255];
@@ -86,25 +82,29 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 	// if min players amount reached
 	if(playersOnServer >= minPlayers)
 	{
-		for(int i = 1; i <= MaxClients; i++)
+		// Handled in OnClientConnect if equal to 0
+		if (minPlayers > 0)
 		{
-			if(IsClientInGame(i) && !IsFakeClient(i))
+			for(int i = 1; i <= MaxClients; i++)
 			{
-				// if player has no vip and player not in spec
-				if(!VIP_IsClientVIP(i) && GetClientTeam(i) != CS_TEAM_SPECTATOR)
+				if(IsClientInGame(i) && !IsFakeClient(i))
 				{
-					VIP_GiveClientVIP(_, i, 0, vipGroup, false);
-				}
-				// else if player has vip and his vip is temporary and he is in spec - remove vip
-				else if(VIP_IsClientVIP(i) && VIP_GetClientID(i) == -1 && GetClientTeam(i) == CS_TEAM_SPECTATOR)
-				{
-					VIP_RemoveClientVIP2(_, i, false, false);
+					// if player has no vip and player not in spec
+					if(!VIP_IsClientVIP(i) && GetClientTeam(i) != CS_TEAM_SPECTATOR)
+					{
+						VIP_GiveClientVIP(_, i, 0, vipGroup, false);
+					}
+					// else if player has vip and his vip is temporary and he is in spec - remove vip
+					else if(VIP_IsClientVIP(i) && VIP_GetClientID(i) == -1 && GetClientTeam(i) == CS_TEAM_SPECTATOR)
+					{
+						VIP_RemoveClientVIP2(_, i, false, false);
+					}
 				}
 			}
 		}
 
 		// push chat message
-		CPrintToChatAll("{default}Free {pink}VIP {default}Giveaway is {green}enabled{default}. Active players got Free {pink}VIP");
+		CPrintToChatAll("[SM] {default}Free {pink}VIP {default}Giveaway is {green}enabled{default}. Active players got Free {pink}VIP");
 	}
 	else
 	{
@@ -123,21 +123,21 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 		int playersNeeded = minPlayers - playersOnServer;
 
 		// push chat message
-		CPrintToChatAll("{default}Free {pink}VIP {default}Giveaway is {red}disabled{default}.\nPlayers on: {green}%d {default}| Players required: {green}%d {default}| Players needed: {green}+%d", playersOnServer, minPlayers, playersNeeded);
+		CPrintToChatAll("[SM] {default}Free {pink}VIP {default}Giveaway is {red}disabled{default}.\nPlayers on: {green}%d {default}| Players required: {green}%d {default}| Players needed: {green}+%d", playersOnServer, minPlayers, playersNeeded);
 	}
 }
 
-public void OnClientPutInServer(int client)
+public void OnClientConnected(int client)
 {
-	if (GetConVarInt(g_Cvar_MinPlayers) != 0)
-		return;
-
-	char vipGroup[16];
-	GetConVarString(g_Cvar_VIPGroup, vipGroup, sizeof(vipGroup));
-
-	if (client && IsClientInGame(client) && !IsFakeClient(client) && !VIP_IsClientVIP(client))
+	if (GetConVarInt(g_Cvar_MinPlayers) == 0)
 	{
-		VIP_GiveClientVIP(_, client, 0, vipGroup, false);
+		char vipGroup[16];
+		GetConVarString(g_Cvar_VIPGroup, vipGroup, sizeof(vipGroup));
+
+		if (client && !IsFakeClient(client) && !VIP_IsClientVIP(client))
+		{
+			VIP_GiveClientVIP(_, client, 0, vipGroup, false);
+		}
 	}
 }
 
@@ -158,7 +158,7 @@ public Action Command_FreeVIP(int client, int argc)
 	int playersOnServer = GetClientCount() -1; // -1 cuz of sourcetv
 	int minPlayers = GetConVarInt(g_Cvar_MinPlayers);
 
-	if(playersOnServer >= minPlayers)
+	if (playersOnServer >= minPlayers)
 	{
 		CPrintToChat(client, "{default}Free {pink}VIP {default}Giveaway is {green}enabled{default}.");
 	}

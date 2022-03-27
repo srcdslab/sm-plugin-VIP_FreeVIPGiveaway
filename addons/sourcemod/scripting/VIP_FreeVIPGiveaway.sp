@@ -4,8 +4,6 @@
 #include <cstrike>
 #include <vip_core>
 #include <multicolors>
-#include <zombiereloaded>
-#include <multicolors>
 #include <mapchooser_extended>
 
 #pragma newdecls required

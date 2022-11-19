@@ -29,7 +29,7 @@ public Plugin myinfo =
 	name = "[VIP] Free VIP Giveaway",
 	author = "inGame, maxime1907, Dolly",
 	description = "Gives Free VIP for players that are active on server",
-	version = "2.0"
+	version = "2.1"
 };
 
 public void OnPluginStart()
@@ -96,25 +96,20 @@ public void OnAllPluginsLoaded()
 
 public void OnConfigsExecuted()
 {
-	if (!g_sHostname[0])
-	{
-		g_Cvar_HostNamePrefix.GetString(g_sHostnamePrefix, sizeof(g_sHostnamePrefix));
-		g_Cvar_Hostname.GetString(g_sHostname, sizeof(g_sHostname));
-
-		if (g_sHostname[0] && g_sHostnamePrefix[0] && StrContains(g_sHostname, g_sHostnamePrefix, true) == -1)
-			ServerCommand("hostname %s %s", g_sHostnamePrefix, g_sHostname);
-	}
-}
-
-public void OnMapStart()
-{
-	if (g_sHostname[0] && g_sHostnamePrefix[0] && StrContains(g_sHostname, g_sHostnamePrefix, true) == -1)
-		ServerCommand("hostname %s %s", g_sHostnamePrefix, g_sHostname);
+	SetHostName();
 }
 
 public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 {
-	int playersOnServer = GetClientCount() - 1; // -1 cuz of sourcetv
+	int freeVIPStart = g_Cvar_FreeVIPStart.IntValue;
+	int freeVipEnd = g_Cvar_FreeVIPEnd.IntValue;
+
+	if(freeVIPStart > GetTime())
+		return;
+
+	if(freeVipEnd < GetTime())
+		return;
+
 	int minPlayers = g_Cvar_MinPlayers.IntValue;
 	//int duration = GetConVarInt(g_Cvar_Duration);
 
@@ -128,6 +123,8 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 	g_Cvar_Hostname.GetString(hostname, sizeof(hostname));
 
 	// if min players amount reached
+	int playersOnServer = GetClientCount() - 1; // -1 cuz of sourcetv
+	
 	if(playersOnServer >= minPlayers)
 	{
 		for(int i = 1; i <= MaxClients; i++)
@@ -170,7 +167,7 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 		int playersNeeded = minPlayers - playersOnServer;
 
 		// push chat message
-		CPrintToChatAll("[SM] {default}Free {pink}VIP {default}Giveaway is {red}disabled{default}.\nPlayers on: {green}%d {default}| Players required: {green}%d {default}| Players needed: {green}+%d", playersOnServer, minPlayers, playersNeeded);
+		CPrintToChatAll("{green}[SM] {default}Free {pink}VIP {default}Giveaway is {red}disabled{default}.\nPlayers on: {green}%d {default}| Players required: {green}%d {default}| Players needed: {green}+%d", playersOnServer, minPlayers, playersNeeded);
 	}
 }
 
@@ -237,17 +234,51 @@ Action Command_FreeVIP(int client, int args)
 {
 	int playersOnServer = GetClientCount() -1; // -1 cuz of sourcetv
 	int minPlayers = g_Cvar_MinPlayers.IntValue;
+	int freeVIPStart = g_Cvar_FreeVIPStart.IntValue;
+	int freeVipEnd = g_Cvar_FreeVIPEnd.IntValue;
+
+	if(freeVIPStart > GetTime() || freeVipEnd < GetTime())
+	{
+		CReplyToCommand(client, "{green}[SM] {default}Free {pink}VIP {default}Giveaway is {red}disabled{default}.");
+		return Plugin_Handled;
+	}
 
 	if (playersOnServer >= minPlayers)
 	{
-		CReplyToCommand(client, "{default}Free {pink}VIP {default}Giveaway is {green}enabled{default}.");
+		CReplyToCommand(client, "{green}[SM] {default}Free {pink}VIP {default}Giveaway is {green}enabled{default}.");
 		return Plugin_Handled;
 	}
 	else
 	{
 		int playersNeeded = minPlayers - playersOnServer;
 
-		CReplyToCommand(client, "{default}Free {pink}VIP {default}Giveaway is {red}disabled{default}.\nPlayers on: {green}%d {default}| Players required: {green}%d {default}| Players needed: {green}+%d", playersOnServer, minPlayers, playersNeeded);
+		CReplyToCommand(client, "{green}[SM] {default}Free {pink}VIP {default}Giveaway is {red}disabled{default}.\nPlayers on: {green}%d {default}| Players required: {green}%d {default}| Players needed: {green}+%d", playersOnServer, minPlayers, playersNeeded);
 		return Plugin_Handled;
+	}
+}
+
+void SetHostName()
+{
+	int freeVIPStart = g_Cvar_FreeVIPStart.IntValue;
+	int freeVipEnd = g_Cvar_FreeVIPEnd.IntValue;
+
+	if(freeVIPStart > GetTime())
+		return;
+
+	if(freeVipEnd < GetTime())
+		return;
+
+	if (!g_sHostname[0])
+	{
+		g_Cvar_HostNamePrefix.GetString(g_sHostnamePrefix, sizeof(g_sHostnamePrefix));
+		g_Cvar_Hostname.GetString(g_sHostname, sizeof(g_sHostname));
+
+		if (g_sHostname[0] && g_sHostnamePrefix[0] && StrContains(g_sHostname, g_sHostnamePrefix, true) == -1)
+			ServerCommand("hostname %s %s", g_sHostnamePrefix, g_sHostname);
+	}
+	else
+	{
+		if (g_sHostname[0] && g_sHostnamePrefix[0] && StrContains(g_sHostname, g_sHostnamePrefix, true) == -1)
+			ServerCommand("hostname %s %s", g_sHostnamePrefix, g_sHostname);
 	}
 }

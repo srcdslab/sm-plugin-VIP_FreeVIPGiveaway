@@ -123,8 +123,13 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 	g_Cvar_Hostname.GetString(hostname, sizeof(hostname));
 
 	// if min players amount reached
-	int playersOnServer = GetClientCount() - 1; // -1 cuz of sourcetv
-	
+	int playersOnServer = GetClientCount();
+	for(int i = 1; i <= MaxClients; i++)
+	{
+		if (IsClientSourceTV(i))
+			playersOnServer = playersOnServer  - 1; // -1 cuz of sourcetv
+	}
+
 	if(playersOnServer >= minPlayers)
 	{
 		for(int i = 1; i <= MaxClients; i++)
@@ -273,11 +278,6 @@ void SetHostName()
 		g_Cvar_HostNamePrefix.GetString(g_sHostnamePrefix, sizeof(g_sHostnamePrefix));
 		g_Cvar_Hostname.GetString(g_sHostname, sizeof(g_sHostname));
 
-		if (g_sHostname[0] && g_sHostnamePrefix[0] && StrContains(g_sHostname, g_sHostnamePrefix, true) == -1)
-			ServerCommand("hostname %s %s", g_sHostnamePrefix, g_sHostname);
-	}
-	else
-	{
 		if (g_sHostname[0] && g_sHostnamePrefix[0] && StrContains(g_sHostname, g_sHostnamePrefix, true) == -1)
 			ServerCommand("hostname %s %s", g_sHostnamePrefix, g_sHostname);
 	}

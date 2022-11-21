@@ -1,6 +1,7 @@
 #pragma semicolon 1
 
 #include <sourcemod>
+#include <clientprefs>
 #include <cstrike>
 #include <vip_core>
 #include <multicolors>
@@ -23,6 +24,8 @@ ConVar
 char 
 		g_sHostname[256],
  		g_sHostnamePrefix[256];
+ 		
+Cookie g_hCookie;
 
 public Plugin myinfo =
 {
@@ -43,11 +46,22 @@ public void OnPluginStart()
 
 	g_Cvar_Hostname = FindConVar("hostname");
 
+	g_hCookie = new Cookie("freevip_cookie", "", CookieAccess_Private);
+	
 	RegConsoleCmd("sm_freevip", Command_FreeVIP, "Display FreeVIP Giveaway status.");
 
 	HookEvent("round_start", Event_RoundStart);
 
 	AutoExecConfig();
+	
+	for(int i = 1; i <= MaxClients; i++)
+	{
+		if(!IsClientInGame(i))
+			continue;
+			
+		if(AreClientCookiesCached(i))
+			OnClientCookiesCached(i);
+	}
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool bLate, char[] sError, int Err_max)
@@ -126,6 +140,9 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 	int playersOnServer = GetClientCount();
 	for(int i = 1; i <= MaxClients; i++)
 	{
+		if(i <= 0 || i > MaxClients || !IsClientConnected(i))
+			continue;
+
 		if (IsClientSourceTV(i))
 			playersOnServer = playersOnServer  - 1; // -1 cuz of sourcetv
 	}
@@ -176,12 +193,15 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 	}
 }
 
-public void OnClientPostAdminCheck(int client)
+public void OnClientCookiesCached(int client)
 {
-	CreateTimer(2.0, PostAdminCheck_Timer, GetClientUserId(client));
+	if(IsClientSourceTV(client) || IsFakeClient(client))
+		return;
+		
+	CreateTimer(2.0, GiveVIP_Timer, GetClientUserId(client));
 }
 
-Action PostAdminCheck_Timer(Handle timer, int userid)
+Action GiveVIP_Timer(Handle timer, int userid)
 {
 	int client = GetClientOfUserId(userid);
 	int freeVIPStart = g_Cvar_FreeVIPStart.IntValue;
@@ -202,6 +222,15 @@ Action PostAdminCheck_Timer(Handle timer, int userid)
 	if(IsClientSourceTV(client) || IsFakeClient(client))
 		return Plugin_Stop;
 
+
+	bool canGetVIP;
+	char cookieValue[6];
+	g_hCookie.Get(client, cookieValue, sizeof(cookieValue));
+	if(StrEqual(cookieValue, "true"))
+		canGetVIP = false;
+	else
+		canGetVIP = true;
+		
 	char vipGroup[16];
 	g_Cvar_VIPGroup.GetString(vipGroup, sizeof(vipGroup));
 
@@ -212,10 +241,17 @@ Action PostAdminCheck_Timer(Handle timer, int userid)
 		if(VIP_GetClientID(client) == -1)
 			return Plugin_Stop;
 
+		if(VIP_GetClientAccessTime(client) == 0)
+			return Plugin_Stop;
+
+		if(!canGetVIP)
+			return Plugin_Stop;
+			
 		int seconds = (freeVipEnd - GetTime());
 		int originalExpireTimeStamp = VIP_GetClientAccessTime(client);
 		int newExpireTimeStamp = (originalExpireTimeStamp + seconds);
 		VIP_SetClientAccessTime(client, newExpireTimeStamp, true);
+		g_hCookie.Set(client, "true");
 	}
 
 	return Plugin_Continue;
@@ -237,7 +273,15 @@ public void OnClientDisconnect(int client)
 
 Action Command_FreeVIP(int client, int args)
 {
-	int playersOnServer = GetClientCount() -1; // -1 cuz of sourcetv
+	int playersOnServer = GetClientCount();
+	for(int i = 1; i <= MaxClients; i++)
+	{
+		if(i <= 0 || i > MaxClients || !IsClientConnected(i))
+			continue;
+
+		if (IsClientSourceTV(i))
+			playersOnServer = playersOnServer  - 1; // -1 cuz of sourcetv
+	}
 	int minPlayers = g_Cvar_MinPlayers.IntValue;
 	int freeVIPStart = g_Cvar_FreeVIPStart.IntValue;
 	int freeVipEnd = g_Cvar_FreeVIPEnd.IntValue;

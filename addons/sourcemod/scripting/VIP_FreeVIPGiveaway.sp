@@ -46,7 +46,7 @@ public void OnPluginStart()
 
 	g_Cvar_Hostname = FindConVar("hostname");
 
-	g_hCookie = new Cookie("freevip_cookie", "", CookieAccess_Private);
+	g_hCookie = new Cookie("freevip_cookie", "Cookie to know who got his vip extended", CookieAccess_Public);
 	
 	RegConsoleCmd("sm_freevip", Command_FreeVIP, "Display FreeVIP Giveaway status.");
 
@@ -59,8 +59,10 @@ public void OnPluginStart()
 		if(!IsClientInGame(i))
 			continue;
 			
-		if(AreClientCookiesCached(i))
-			OnClientCookiesCached(i);
+		if(!IsClientAuthorized(i))
+			continue;
+		
+		VIP_OnClientLoaded(i, (VIP_IsClientVIP(i)) ? true : false);
 	}
 }
 
@@ -77,20 +79,7 @@ public APLRes AskPluginLoad2(Handle myself, bool bLate, char[] sError, int Err_m
 
 int Native_IsFreeVIPOn(Handle plugin, int params)
 {
-	int minPlayers = g_Cvar_MinPlayers.IntValue;
-	int freeVIPStart = g_Cvar_FreeVIPStart.IntValue;
-	int freeVipEnd = g_Cvar_FreeVIPEnd.IntValue;
-
-	if(minPlayers > 0)
-		return 0;
-	
-	if(freeVIPStart > GetTime())
-		return 0;
-	
-	if(freeVipEnd < GetTime())
-		return 0;
-	
-	return 1;
+	return (IsFreeVIPOn());
 }
 
 int Native_GetEndTimeStamp(Handle plugin, int params)
@@ -170,7 +159,7 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 		}
 
 		// push chat message
-		CPrintToChatAll("[SM] {default}Free {pink}VIP {default}Giveaway is {green}enabled{default}. Active players got Free {pink}VIP");
+		CPrintToChatAll("[SM] {pink}Free VIP Giveaway {default}is {green}enabled{default}. {pink}Active players got Free VIP.");
 	}
 	else
 	{
@@ -189,40 +178,66 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 		int playersNeeded = minPlayers - playersOnServer;
 
 		// push chat message
-		CPrintToChatAll("{green}[SM] {default}Free {pink}VIP {default}Giveaway is {red}disabled{default}.\nPlayers on: {green}%d {default}| Players required: {green}%d {default}| Players needed: {green}+%d", playersOnServer, minPlayers, playersNeeded);
+		CPrintToChatAll("{green}[SM] {pink}Free VIP Giveaway {default}is {red}disabled{default}.\nPlayers on: {green}%d {default}| Players required: {green}%d {default}| Players needed: {green}+%d", playersOnServer, minPlayers, playersNeeded);
 	}
 }
 
-public void OnClientCookiesCached(int client)
+public void VIP_OnClientLoaded(int client)
 {
+	if(!IsFreeVIPOn())
+	{
+		char cookieValue[6];
+		g_hCookie.Get(client, cookieValue, sizeof(cookieValue));
+		/* Set cookie to false in all clients when vip ends */
+		if(StrEqual(cookieValue, "true"))
+			g_hCookie.Set(client, "false");
+			
+		return;
+	}
+		
 	if(IsClientSourceTV(client) || IsFakeClient(client))
 		return;
 		
-	CreateTimer(2.0, GiveVIP_Timer, GetClientUserId(client));
+	if(!IsClientAuthorized(client))
+		return;
+	
+	GiveVIP(client);
 }
 
-Action GiveVIP_Timer(Handle timer, int userid)
+void GiveVIP(int client)
 {
-	int client = GetClientOfUserId(userid);
-	int freeVIPStart = g_Cvar_FreeVIPStart.IntValue;
-	int freeVipEnd = g_Cvar_FreeVIPEnd.IntValue;
-
-	if(freeVIPStart > GetTime())
-		return Plugin_Stop;
-
-	if(freeVipEnd < GetTime())
-		return Plugin_Stop;
-
+	if(!IsFreeVIPOn())
+		return;
+		
 	if(client < 1)
-		return Plugin_Stop;
+		return;
 
-	if(g_Cvar_MinPlayers.IntValue != 0)
-		return Plugin_Stop;
+	if(VIP_IsClientVIP(client))
+	{
+		SetVIP(client);
+		return;
+	}
+		
+	char vipGroup[16];
+	g_Cvar_VIPGroup.GetString(vipGroup, sizeof(vipGroup));
+	VIP_GiveClientVIP(_, client, 0, vipGroup, false);
+	/* Give client the vip flags */
+	int flags = GetUserFlagBits(client);
+	if(!(flags & ADMFLAG_CUSTOM1))
+		SetUserFlagBits(client, flags | ADMFLAG_CUSTOM1);
+}
 
-	if(IsClientSourceTV(client) || IsFakeClient(client))
-		return Plugin_Stop;
+void SetVIP(int client)
+{
+	if(!IsFreeVIPOn())
+		return;
+		
+	if(client < 1)
+		return;
 
-
+	if(!AreClientCookiesCached(client))
+		return;
+		
 	bool canGetVIP;
 	char cookieValue[6];
 	g_hCookie.Get(client, cookieValue, sizeof(cookieValue));
@@ -230,31 +245,23 @@ Action GiveVIP_Timer(Handle timer, int userid)
 		canGetVIP = false;
 	else
 		canGetVIP = true;
+
+	if(!VIP_IsClientVIP(client) || VIP_GetClientID(client) == -1 || VIP_GetClientAccessTime(client) == 0)
+		return;
+	
+	if(!canGetVIP)
+		return;
 		
 	char vipGroup[16];
 	g_Cvar_VIPGroup.GetString(vipGroup, sizeof(vipGroup));
-
-	if(!VIP_IsClientVIP(client))
-		VIP_GiveClientVIP(_, client, 0, vipGroup, false);
-	else
-	{
-		if(VIP_GetClientID(client) == -1)
-			return Plugin_Stop;
-
-		if(VIP_GetClientAccessTime(client) == 0)
-			return Plugin_Stop;
-
-		if(!canGetVIP)
-			return Plugin_Stop;
-			
-		int seconds = (freeVipEnd - GetTime());
-		int originalExpireTimeStamp = VIP_GetClientAccessTime(client);
-		int newExpireTimeStamp = (originalExpireTimeStamp + seconds);
-		VIP_SetClientAccessTime(client, newExpireTimeStamp, true);
-		g_hCookie.Set(client, "true");
-	}
-
-	return Plugin_Continue;
+	
+	int freeVipEnd = g_Cvar_FreeVIPEnd.IntValue;		
+	int seconds = (freeVipEnd - GetTime());
+	int originalExpireTimeStamp = VIP_GetClientAccessTime(client);
+	int newExpireTimeStamp = (originalExpireTimeStamp + seconds);
+	VIP_SetClientAccessTime(client, newExpireTimeStamp, true);
+	g_hCookie.Set(client, "true");
+	return;
 }
 
 public void OnClientDisconnect(int client)
@@ -288,20 +295,20 @@ Action Command_FreeVIP(int client, int args)
 
 	if(freeVIPStart > GetTime() || freeVipEnd < GetTime())
 	{
-		CReplyToCommand(client, "{green}[SM] {default}Free {pink}VIP {default}Giveaway is {red}disabled{default}.");
+		CReplyToCommand(client, "{green}[SM] {pink}Free VIP Giveaway {default}is {red}disabled{default}.");
 		return Plugin_Handled;
 	}
 
 	if (playersOnServer >= minPlayers)
 	{
-		CReplyToCommand(client, "{green}[SM] {default}Free {pink}VIP {default}Giveaway is {green}enabled{default}.");
+		CReplyToCommand(client, "{green}[SM] {pink}Free VIP Giveaway {default}is {green}enabled{default}.");
 		return Plugin_Handled;
 	}
 	else
 	{
 		int playersNeeded = minPlayers - playersOnServer;
 
-		CReplyToCommand(client, "{green}[SM] {default}Free {pink}VIP {default}Giveaway is {red}disabled{default}.\nPlayers on: {green}%d {default}| Players required: {green}%d {default}| Players needed: {green}+%d", playersOnServer, minPlayers, playersNeeded);
+		CReplyToCommand(client, "{green}[SM] {pink}Free VIP Giveaway {default}is {red}disabled{default}.\nPlayers on: {green}%d {default}| Players required: {green}%d {default}| Players needed: {green}+%d", playersOnServer, minPlayers, playersNeeded);
 		return Plugin_Handled;
 	}
 }
@@ -317,12 +324,26 @@ void SetHostName()
 	if(freeVipEnd < GetTime())
 		return;
 
-	if (!g_sHostname[0])
-	{
-		g_Cvar_HostNamePrefix.GetString(g_sHostnamePrefix, sizeof(g_sHostnamePrefix));
-		g_Cvar_Hostname.GetString(g_sHostname, sizeof(g_sHostname));
+	g_Cvar_HostNamePrefix.GetString(g_sHostnamePrefix, sizeof(g_sHostnamePrefix));
+	g_Cvar_Hostname.GetString(g_sHostname, sizeof(g_sHostname));
 
-		if (g_sHostname[0] && g_sHostnamePrefix[0] && StrContains(g_sHostname, g_sHostnamePrefix, true) == -1)
-			ServerCommand("hostname %s %s", g_sHostnamePrefix, g_sHostname);
-	}
+	if (StrContains(g_sHostname, g_sHostnamePrefix, true) == -1)
+		ServerCommand("hostname %s %s", g_sHostnamePrefix, g_sHostname);
+}
+
+bool IsFreeVIPOn()
+{
+	int freeVIPStart = g_Cvar_FreeVIPStart.IntValue;
+	int freeVipEnd = g_Cvar_FreeVIPEnd.IntValue;
+
+	if(freeVIPStart > GetTime())
+		return false;
+
+	if(freeVipEnd < GetTime())
+		return false;
+
+	if(g_Cvar_MinPlayers.IntValue != 0)
+		return false;
+		
+	return true;
 }

@@ -62,7 +62,7 @@ public void OnPluginStart()
 		if(!IsClientAuthorized(i))
 			continue;
 		
-		VIP_OnClientLoaded(i, (VIP_IsClientVIP(i)) ? true : false);
+		VIP_OnClientLoaded(i);
 	}
 }
 

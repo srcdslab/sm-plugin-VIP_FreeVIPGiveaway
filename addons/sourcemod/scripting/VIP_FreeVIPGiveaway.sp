@@ -37,7 +37,7 @@ public Plugin myinfo =
 	name = "[VIP] Free VIP Giveaway",
 	author = "inGame, maxime1907, Dolly",
 	description = "Gives Free VIP for players that are active on server",
-	version = "3.0.0"
+	version = "2.2.0"
 };
 
 public void OnPluginStart()
@@ -51,6 +51,7 @@ public void OnPluginStart()
 	g_iMinPlayers = GetConVarInt(g_Cvar_MinPlayers);
 	g_iFreeVIPStart = GetConVarInt(g_Cvar_FreeVIPStart);
 	g_iFreeVIPEnd = GetConVarInt(g_Cvar_FreeVIPEnd);
+	GetConVarString(g_Cvar_VIPGroup, g_sVIPGroup, sizeof(g_sVIPGroup));
 
 	HookConVarChange(g_Cvar_MinPlayers, OnConVarChanged);
 	HookConVarChange(g_Cvar_VIPGroup, OnConVarChanged);
@@ -67,8 +68,8 @@ public void OnPluginStart()
 
 	AutoExecConfig();
 
-	CreateTimer(2.0, CheckALLVIPPlayers);
-	CreateTimer(20.5, Timer_ReloadVIPs);
+	CreateTimer(2.0, CheckALLVIPPlayers, _, TIMER_FLAG_NO_MAPCHANGE);
+	CreateTimer(20.5, Timer_ReloadVIPs, _, TIMER_FLAG_NO_MAPCHANGE);
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool bLate, char[] sError, int Err_max)
@@ -112,6 +113,9 @@ public void OnConfigsExecuted()
 public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 {
 	if (!IsFreeVIPOn())
+		return;
+
+	if (g_iMinPlayers <= 0)
 		return;
 
 	int playersOnServer = GetRealPlayersOnServer();

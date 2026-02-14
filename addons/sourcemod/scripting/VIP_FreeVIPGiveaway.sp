@@ -163,7 +163,7 @@ public void OnConVarChanged(ConVar convar, const char[] oldValue, const char[] n
 public Action Timer_ReloadVIPs(Handle timer)
 {
 	ServerCommand("sm_reloadvips");
-	return Plugin_Continue;
+	return Plugin_Stop;
 }
 
 Action CheckALLVIPPlayers(Handle timer)
@@ -179,7 +179,7 @@ Action CheckALLVIPPlayers(Handle timer)
 		VIP_OnClientLoaded(i, (VIP_IsClientVIP(i)) ? true : false);
 	}
 
-	return Plugin_Continue;
+	return Plugin_Stop;
 }
 
 public void VIP_OnClientLoaded(int client, bool isVIP)

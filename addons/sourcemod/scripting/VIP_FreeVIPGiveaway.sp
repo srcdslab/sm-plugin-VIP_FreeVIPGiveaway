@@ -69,7 +69,6 @@ public void OnPluginStart()
 	AutoExecConfig();
 
 	CreateTimer(2.0, CheckALLVIPPlayers, _, TIMER_FLAG_NO_MAPCHANGE);
-	CreateTimer(20.5, Timer_ReloadVIPs, _, TIMER_FLAG_NO_MAPCHANGE);
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool bLate, char[] sError, int Err_max)
@@ -158,12 +157,6 @@ public void OnConVarChanged(ConVar convar, const char[] oldValue, const char[] n
 		g_iFreeVIPStart = GetConVarInt(convar);
 	else if (convar == g_Cvar_FreeVIPEnd)
 		g_iFreeVIPEnd = GetConVarInt(convar);
-}
-
-public Action Timer_ReloadVIPs(Handle timer)
-{
-	ServerCommand("sm_reloadvips");
-	return Plugin_Stop;
 }
 
 Action CheckALLVIPPlayers(Handle timer)

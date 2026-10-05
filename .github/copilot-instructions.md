@@ -242,7 +242,7 @@ db.Query(CallbackFunction, query, clientId);
 
 ## Version Management
 
-- Use semantic versioning in plugin info (currently 2.1)
+- Use semantic versioning in plugin info (currently 2.1.1)
 - Update version in both plugin header and git tags
 - CI automatically creates releases from tags
 - Keep changelog for significant changes

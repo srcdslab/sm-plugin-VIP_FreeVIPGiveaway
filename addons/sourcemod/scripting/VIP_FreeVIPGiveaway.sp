@@ -32,7 +32,7 @@ public Plugin myinfo =
 	name = "[VIP] Free VIP Giveaway",
 	author = "inGame, maxime1907, Dolly",
 	description = "Gives Free VIP for players that are active on server",
-	version = "2.1"
+	version = "2.1.1"
 };
 
 public void OnPluginStart()
@@ -266,7 +266,7 @@ void SetVIP(int client)
 
 public void OnClientDisconnect(int client)
 {
-	if(IsClientSourceTV(client) || IsFakeClient(client))
+	if(!IsClientInGame(client) || IsClientSourceTV(client) || IsFakeClient(client))
 		return;
 
 	char testVipGroup[16];

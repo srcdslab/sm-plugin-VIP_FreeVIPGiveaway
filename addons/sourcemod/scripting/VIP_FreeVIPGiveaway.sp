@@ -243,7 +243,7 @@ void SetVIP(int client)
 
 public void OnClientDisconnect(int client)
 {
-	if (IsClientSourceTV(client) || IsFakeClient(client))
+	if (!IsClientInGame(client) || IsClientSourceTV(client) || IsFakeClient(client))
 		return;
 
 	if (!VIP_IsClientVIP(client) || VIP_GetClientID(client) != -1 || VIP_GetClientVIPGroup(client, g_sTestVIPGroup, sizeof(g_sTestVIPGroup)))

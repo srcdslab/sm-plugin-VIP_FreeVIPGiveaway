@@ -15,8 +15,8 @@ This repository contains a SourcePawn plugin for SourceMod that implements a **F
 ## Technical Environment
 
 - **Language**: SourcePawn (.sp files)
-- **Platform**: SourceMod 1.11.0+ (currently using 1.11.0-git6934)
-- **Build System**: SourceKnight for dependency management and compilation
+- **Platform**: SourceMod 1.12.x
+- **Build System**: Native GitHub Actions (rumblefrog/setup-sp) for dependency management and compilation
 - **Target Output**: Compiled .smx plugin files
 - **Dependencies**:
   - `sourcemod` (core framework)
@@ -38,47 +38,33 @@ addons/sourcemod/scripting/
 ├── dependabot.yml                  # Dependency updates configuration
 └── copilot-instructions.md         # This file - coding agent instructions
 
-sourceknight.yaml                   # Build configuration and dependencies
 .gitignore                          # Excludes build artifacts, .smx files
 ```
 
 **Generated Files** (not in repository):
 - `cfg/sourcemod/VIP_FreeVIPGiveaway.cfg` - Auto-generated ConVar configuration
-- `.sourceknight/` - Build cache and output directory
 
 ## Build Process
 
-### Using SourceKnight (Recommended)
-The repository uses SourceKnight for automated dependency management and building:
-
-```bash
-# Install SourceKnight if not already available
-pip install sourceknight
-
-# Build the plugin (handles dependency downloads automatically)
-sourceknight build
-
-# Output will be in .sourceknight/package/addons/sourcemod/plugins/
-```
-
-**Note**: SourceKnight installation may fail on some systems due to dependency issues. The CI/CD pipeline uses Docker containers with SourceKnight pre-installed.
+### Using GitHub Actions (Recommended)
+The repository builds natively via GitHub Actions using `rumblefrog/setup-sp` to install the SourcePawn compiler (SourceMod 1.12.x), clones the `MultiColors` and `VIP-Core` include dependencies, and compiles with `spcomp`. Just push or open a PR and CI will build the plugin.
 
 ### Manual Build Process
-If SourceKnight installation fails, you can build manually:
+You can also build manually:
 ```bash
 # 1. Download dependencies manually:
-#    - SourceMod 1.11.0-git6934 from https://sm.alliedmods.net/smdrop/1.11/sourcemod-1.11.0-git6934-linux.tar.gz
+#    - SourceMod 1.12.x from https://sm.alliedmods.net/smdrop/1.12/
 #    - MultiColors include from https://github.com/srcdslab/sm-plugin-MultiColors
 #    - VIP Core include from https://github.com/srcdslab/sm-plugin-VIP-Core
 
 # 2. Place include files in addons/sourcemod/scripting/include/
 # 3. Compile using SourceMod compiler
-spcomp addons/sourcemod/scripting/VIP_FreeVIPGiveaway.sp -o VIP_FreeVIPGiveaway.smx
+spcomp -i addons/sourcemod/scripting/include addons/sourcemod/scripting/VIP_FreeVIPGiveaway.sp -o VIP_FreeVIPGiveaway.smx
 ```
 
 ### CI/CD Pipeline
 - **Trigger**: Push, pull request, or manual dispatch
-- **Build**: Uses maxime1907/action-sourceknight@v1
+- **Build**: Native GitHub Actions workflow (`.github/workflows/ci.yml`) using `rumblefrog/setup-sp`
 - **Output**: Creates tar.gz releases with compiled plugins
 - **Versioning**: Uses git tags or "latest" for main/master branch
 
@@ -184,7 +170,7 @@ db.Query(CallbackFunction, query, clientId);
 ### Local Testing
 1. **Build Verification**:
    ```bash
-   sourceknight build
+   spcomp -i addons/sourcemod/scripting/include addons/sourcemod/scripting/VIP_FreeVIPGiveaway.sp -o VIP_FreeVIPGiveaway.smx
    # Verify no compilation errors
    ```
 

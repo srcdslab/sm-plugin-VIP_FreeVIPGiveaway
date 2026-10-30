@@ -12,25 +12,24 @@
 ConVar
 		g_Cvar_MinPlayers,
 		g_Cvar_VIPGroup,
-		g_Cvar_TestVIPGroup,
- 		g_Cvar_Hostname,
- 		g_Cvar_HostNamePrefix,
- 		g_Cvar_FreeVIPStart,
- 		g_Cvar_FreeVIPEnd;
+		g_Cvar_Hostname,
+		g_Cvar_HostNamePrefix,
+		g_Cvar_FreeVIPStart,
+		g_Cvar_FreeVIPEnd;
 
 char
 		g_sHostname[256],
-		g_sVIPGroup[32],
-		g_sTestVIPGroup[32],
- 		g_sHostnamePrefix[256];
+		g_sHostnamePrefix[256],
+		g_sVIPGroup[64];
 
 int
 		g_iMinPlayers,
 		g_iFreeVIPStart,
 		g_iFreeVIPEnd;
 
-Cookie g_hCookie;
+bool g_bLateLoad;
 
+Cookie g_hCookie;
 
 public Plugin myinfo =
 {
@@ -43,20 +42,20 @@ public Plugin myinfo =
 public void OnPluginStart()
 {
 	g_Cvar_HostNamePrefix 		= CreateConVar("sm_freevip_hostname_prefix", "[Free VIP]", "Hostname prefix that will be displayed in server list");
-	g_Cvar_MinPlayers 			= CreateConVar("sm_freevip_min_players", "0", "How many players should be on server to active Free VIP Giveaway. [-1 = Free VIP Disabled]", FCVAR_NONE, true, -1.0, true, float(MAXPLAYERS));
+	g_Cvar_MinPlayers 			= CreateConVar("sm_freevip_min_players", "0", "How many players should be on server to activate Free VIP Giveaway. [-1 = Disabled, 0 = No minimum (given on connect), N = Minimum players (checked on round start and on connect)]", FCVAR_NONE, true, -1.0, true, float(MAXPLAYERS));
 	g_Cvar_VIPGroup 			= CreateConVar("sm_freevip_group", "VIP", "What VIP group set on player");
 	g_Cvar_FreeVIPStart			= CreateConVar("sm_freevip_timestamp_start", "1669849200", "TimeStamp of the time that free vip will start at!");
 	g_Cvar_FreeVIPEnd 			= CreateConVar("sm_freevip_timestamp_end", "1672527600", "TimeStamp of the time that free vip will end at!");
 
-	g_iMinPlayers = GetConVarInt(g_Cvar_MinPlayers);
-	g_iFreeVIPStart = GetConVarInt(g_Cvar_FreeVIPStart);
-	g_iFreeVIPEnd = GetConVarInt(g_Cvar_FreeVIPEnd);
-	GetConVarString(g_Cvar_VIPGroup, g_sVIPGroup, sizeof(g_sVIPGroup));
+	g_iMinPlayers = g_Cvar_MinPlayers.IntValue;
+	g_iFreeVIPStart = g_Cvar_FreeVIPStart.IntValue;
+	g_iFreeVIPEnd = g_Cvar_FreeVIPEnd.IntValue;
+	g_Cvar_VIPGroup.GetString(g_sVIPGroup, sizeof(g_sVIPGroup));
 
-	HookConVarChange(g_Cvar_MinPlayers, OnConVarChanged);
-	HookConVarChange(g_Cvar_VIPGroup, OnConVarChanged);
-	HookConVarChange(g_Cvar_FreeVIPStart, OnConVarChanged);
-	HookConVarChange(g_Cvar_FreeVIPEnd, OnConVarChanged);
+	g_Cvar_MinPlayers.AddChangeHook(OnConVarChanged);
+	g_Cvar_VIPGroup.AddChangeHook(OnConVarChanged);
+	g_Cvar_FreeVIPStart.AddChangeHook(OnConVarChanged);
+	g_Cvar_FreeVIPEnd.AddChangeHook(OnConVarChanged);
 
 	g_Cvar_Hostname = FindConVar("hostname");
 
@@ -67,12 +66,12 @@ public void OnPluginStart()
 	HookEvent("round_start", Event_RoundStart);
 
 	AutoExecConfig();
-
-	CreateTimer(2.0, CheckALLVIPPlayers, _, TIMER_FLAG_NO_MAPCHANGE);
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool bLate, char[] sError, int Err_max)
 {
+	g_bLateLoad = bLate;
+
 	RegPluginLibrary("VIP_FreeVIPGiveaway");
 
 	CreateNative("FreeVIP_IsFreeVIPOn", Native_IsFreeVIPOn);
@@ -97,16 +96,16 @@ int Native_GetStartTimeStamp(Handle plugin, int params)
 	return g_iFreeVIPStart;
 }
 
-public void OnAllPluginsLoaded()
-{
-	g_Cvar_TestVIPGroup = FindConVar("sm_vip_test_group");
-	GetConVarString(g_Cvar_TestVIPGroup, g_sTestVIPGroup, sizeof(g_sTestVIPGroup));
-	HookConVarChange(g_Cvar_TestVIPGroup, OnConVarChanged);
-}
-
 public void OnConfigsExecuted()
 {
 	SetHostName();
+
+	/* Late load: VIP_OnClientLoaded already fired for the players in game, check them once the config is executed */
+	if (g_bLateLoad)
+	{
+		g_bLateLoad = false;
+		CheckAllPlayers();
+	}
 }
 
 public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
@@ -114,6 +113,7 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 	if (!IsFreeVIPOn())
 		return;
 
+	// 0 = no minimum, Free VIP is given in VIP_OnClientLoaded
 	if (g_iMinPlayers <= 0)
 		return;
 
@@ -123,7 +123,7 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 		// remove temporary vip from players if not enough players
 		for (int i = 1; i <= MaxClients; i++)
 		{
-			if (!IsClientInGame(i) || IsFakeClient(i) || !VIP_IsClientVIP(i) || VIP_GetClientID(i) != -1 || VIP_GetClientVIPGroup(i, g_sTestVIPGroup, sizeof(g_sTestVIPGroup)))
+			if (!IsClientInGame(i) || IsFakeClient(i) || !HasFreeVIP(i))
 				continue;
 
 			VIP_RemoveClientVIP2(_, i, false, false);
@@ -148,18 +148,16 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 public void OnConVarChanged(ConVar convar, const char[] oldValue, const char[] newValue)
 {
 	if (convar == g_Cvar_MinPlayers)
-		g_iMinPlayers = GetConVarInt(convar);
+		g_iMinPlayers = convar.IntValue;
 	else if (convar == g_Cvar_VIPGroup)
-		GetConVarString(g_Cvar_VIPGroup, g_sVIPGroup, sizeof(g_sVIPGroup));
-	else if (convar == g_Cvar_TestVIPGroup)
-		GetConVarString(g_Cvar_TestVIPGroup, g_sTestVIPGroup, sizeof(g_sTestVIPGroup));
+		convar.GetString(g_sVIPGroup, sizeof(g_sVIPGroup));
 	else if (convar == g_Cvar_FreeVIPStart)
-		g_iFreeVIPStart = GetConVarInt(convar);
+		g_iFreeVIPStart = convar.IntValue;
 	else if (convar == g_Cvar_FreeVIPEnd)
-		g_iFreeVIPEnd = GetConVarInt(convar);
+		g_iFreeVIPEnd = convar.IntValue;
 }
 
-Action CheckALLVIPPlayers(Handle timer)
+void CheckAllPlayers()
 {
 	for (int i = 1; i <= MaxClients; i++)
 	{
@@ -169,10 +167,8 @@ Action CheckALLVIPPlayers(Handle timer)
 		if (!IsClientAuthorized(i))
 			continue;
 
-		VIP_OnClientLoaded(i, (VIP_IsClientVIP(i)) ? true : false);
+		VIP_OnClientLoaded(i, VIP_IsClientVIP(i));
 	}
-
-	return Plugin_Stop;
 }
 
 public void VIP_OnClientLoaded(int client, bool isVIP)
@@ -207,6 +203,10 @@ void GiveVIP(int client)
 		SetVIP(client);
 		return;
 	}
+
+	// Not enough players yet: Event_RoundStart gives it once the minimum is reached
+	if (GetRealPlayersOnServer() < g_iMinPlayers)
+		return;
 
 	VIP_GiveClientVIP(_, client, 0, g_sVIPGroup, false);
 }
@@ -246,7 +246,7 @@ public void OnClientDisconnect(int client)
 	if (!IsClientInGame(client) || IsClientSourceTV(client) || IsFakeClient(client))
 		return;
 
-	if (!VIP_IsClientVIP(client) || VIP_GetClientID(client) != -1 || VIP_GetClientVIPGroup(client, g_sTestVIPGroup, sizeof(g_sTestVIPGroup)))
+	if (!HasFreeVIP(client))
 		return;
 
 	VIP_RemoveClientVIP2(_, client, false, false);
@@ -268,14 +268,13 @@ Action Command_FreeVIP(int client, int args)
 		return Plugin_Handled;
 	}
 
-	CReplyToCommand(client, "{green}[SM] {pink}Free VIP Giveaway is {green}enabled{pink}. {green}Players got Free VIP.");
+	CReplyToCommand(client, "{green}[SM] {pink}Free VIP Giveaway is {green}enabled{pink}. Players got Free VIP.");
 	return Plugin_Handled;
 }
 
 void SetHostName()
 {
-	int iTime = GetTime();
-	if (g_iFreeVIPStart > iTime || g_iFreeVIPEnd < iTime)
+	if (!IsFreeVIPOn())
 		return;
 
 	g_Cvar_HostNamePrefix.GetString(g_sHostnamePrefix, sizeof(g_sHostnamePrefix));
@@ -294,16 +293,25 @@ bool IsFreeVIPOn()
 	return true;
 }
 
-stock int GetRealPlayersOnServer()
+/* Temporary VIP (not saved in the database) of the Free VIP group: leaves Test VIP and VIP given by other plugins alone */
+bool HasFreeVIP(int client)
 {
-	int playersOnServer = GetClientCount();
+	if (!VIP_IsClientVIP(client) || VIP_GetClientID(client) != -1)
+		return false;
+
+	char group[64];
+	VIP_GetClientVIPGroup(client, group, sizeof(group));
+	return StrEqual(group, g_sVIPGroup);
+}
+
+/* Players in game, without bots and SourceTV */
+int GetRealPlayersOnServer()
+{
+	int playersOnServer;
 	for (int i = 1; i <= MaxClients; i++)
 	{
-		if (!IsClientConnected(i))
-			continue;
-
-		if (IsClientSourceTV(i))
-			playersOnServer--;
+		if (IsClientInGame(i) && !IsFakeClient(i))
+			playersOnServer++;
 	}
 
 	return playersOnServer;

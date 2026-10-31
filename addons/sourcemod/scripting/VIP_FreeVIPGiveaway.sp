@@ -32,7 +32,7 @@ public Plugin myinfo =
 	name = "[VIP] Free VIP Giveaway",
 	author = "inGame, maxime1907, Dolly",
 	description = "Gives Free VIP for players that are active on server",
-	version = "2.1.1"
+	version = "2.1.2"
 };
 
 public void OnPluginStart()
@@ -51,6 +51,8 @@ public void OnPluginStart()
 	RegConsoleCmd("sm_freevip", Command_FreeVIP, "Display FreeVIP Giveaway status.");
 
 	HookEvent("round_start", Event_RoundStart);
+
+	LoadTranslations("VIP_FreeVIPGiveaway.phrases");
 
 	AutoExecConfig();
 	
@@ -159,7 +161,7 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 		}
 
 		// push chat message
-		CPrintToChatAll("[SM] {pink}Free VIP Giveaway {default}is {green}enabled{default}. {pink}Active players got Free VIP.");
+		CPrintToChatAll("[SM] %t", "FreeVIP Enabled Given");
 	}
 	else
 	{
@@ -178,7 +180,7 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 		int playersNeeded = minPlayers - playersOnServer;
 
 		// push chat message
-		CPrintToChatAll("{green}[SM] {pink}Free VIP Giveaway {default}is {red}disabled{default}.\nPlayers on: {green}%d {default}| Players required: {green}%d {default}| Players needed: {green}+%d", playersOnServer, minPlayers, playersNeeded);
+		CPrintToChatAll("{green}[SM] %t\n%t", "FreeVIP Disabled", "FreeVIP Players Needed", playersOnServer, minPlayers, playersNeeded);
 	}
 }
 
@@ -295,20 +297,20 @@ Action Command_FreeVIP(int client, int args)
 
 	if(freeVIPStart > GetTime() || freeVipEnd < GetTime())
 	{
-		CReplyToCommand(client, "{green}[SM] {pink}Free VIP Giveaway {default}is {red}disabled{default}.");
+		CReplyToCommand(client, "{green}[SM] %t", "FreeVIP Disabled");
 		return Plugin_Handled;
 	}
 
 	if (playersOnServer >= minPlayers)
 	{
-		CReplyToCommand(client, "{green}[SM] {pink}Free VIP Giveaway {default}is {green}enabled{default}.");
+		CReplyToCommand(client, "{green}[SM] %t", "FreeVIP Enabled");
 		return Plugin_Handled;
 	}
 	else
 	{
 		int playersNeeded = minPlayers - playersOnServer;
 
-		CReplyToCommand(client, "{green}[SM] {pink}Free VIP Giveaway {default}is {red}disabled{default}.\nPlayers on: {green}%d {default}| Players required: {green}%d {default}| Players needed: {green}+%d", playersOnServer, minPlayers, playersNeeded);
+		CReplyToCommand(client, "{green}[SM] %t\n%t", "FreeVIP Disabled", "FreeVIP Players Needed", playersOnServer, minPlayers, playersNeeded);
 		return Plugin_Handled;
 	}
 }

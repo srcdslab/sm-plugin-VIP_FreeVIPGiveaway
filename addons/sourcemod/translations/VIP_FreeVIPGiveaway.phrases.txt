@@ -1,0 +1,44 @@
+"Phrases"
+{
+	"FreeVIP Enabled"
+	{
+		"en"		"{pink}Free VIP Giveaway {default}is {green}enabled{default}."
+		"fr"		"Le {pink}VIP gratuit {default}est {green}activé{default}."
+		"ru"		"{pink}Бесплатный VIP {default}{green}включён{default}."
+		"es"		"El {pink}VIP gratis {default}está {green}activado{default}."
+		"de"		"{pink}Gratis-VIP-Aktion {default}ist {green}aktiviert{default}."
+		"pt"		"O {pink}VIP grátis {default}está {green}ativado{default}."
+		"chi"		"{pink}免费VIP赠送活动{default}已{green}开启{default}。"
+	}
+	"FreeVIP Enabled Given"
+	{
+		"en"		"{pink}Free VIP Giveaway {default}is {green}enabled{default}. {pink}Active players got Free VIP."
+		"fr"		"Le {pink}VIP gratuit {default}est {green}activé{default}. {pink}Les joueurs actifs ont reçu le VIP gratuit."
+		"ru"		"{pink}Бесплатный VIP {default}{green}включён{default}. {pink}Активные игроки получили бесплатный VIP."
+		"es"		"El {pink}VIP gratis {default}está {green}activado{default}. {pink}Los jugadores activos recibieron VIP gratis."
+		"de"		"{pink}Gratis-VIP-Aktion {default}ist {green}aktiviert{default}. {pink}Aktive Spieler haben Gratis-VIP erhalten."
+		"pt"		"O {pink}VIP grátis {default}está {green}ativado{default}. {pink}Os jogadores ativos receberam VIP grátis."
+		"chi"		"{pink}免费VIP赠送活动{default}已{green}开启{default}。{pink}活跃玩家已获得免费VIP。"
+	}
+	"FreeVIP Disabled"
+	{
+		"en"		"{pink}Free VIP Giveaway {default}is {red}disabled{default}."
+		"fr"		"Le {pink}VIP gratuit {default}est {red}désactivé{default}."
+		"ru"		"{pink}Бесплатный VIP {default}{red}выключен{default}."
+		"es"		"El {pink}VIP gratis {default}está {red}desactivado{default}."
+		"de"		"{pink}Gratis-VIP-Aktion {default}ist {red}deaktiviert{default}."
+		"pt"		"O {pink}VIP grátis {default}está {red}desativado{default}."
+		"chi"		"{pink}免费VIP赠送活动{default}已{red}关闭{default}。"
+	}
+	"FreeVIP Players Needed"
+	{
+		"#format"	"{1:d},{2:d},{3:d}"
+		"en"		"Players on: {green}{1} {default}| Players required: {green}{2} {default}| Players needed: {green}+{3}"
+		"fr"		"Joueurs en ligne : {green}{1} {default}| Joueurs requis : {green}{2} {default}| Joueurs manquants : {green}+{3}"
+		"ru"		"Игроков онлайн: {green}{1} {default}| Требуется: {green}{2} {default}| Не хватает: {green}+{3}"
+		"es"		"Jugadores conectados: {green}{1} {default}| Jugadores requeridos: {green}{2} {default}| Jugadores faltantes: {green}+{3}"
+		"de"		"Spieler online: {green}{1} {default}| Benötigte Spieler: {green}{2} {default}| Fehlende Spieler: {green}+{3}"
+		"pt"		"Jogadores online: {green}{1} {default}| Jogadores necessários: {green}{2} {default}| Faltam: {green}+{3}"
+		"chi"		"在线玩家：{green}{1} {default}| 所需玩家：{green}{2} {default}| 还需玩家：{green}+{3}"
+	}
+}

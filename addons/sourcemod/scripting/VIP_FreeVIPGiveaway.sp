@@ -29,6 +29,11 @@ int
 
 bool g_bLateLoad;
 
+/* Free VIP given by this plugin, so only that one is removed (not Test VIP or VIP given by other plugins in the same group) */
+bool g_bGaveFreeVIP[MAXPLAYERS + 1];
+/* VIP_OnClientLoaded already fired, so OnClientCookiesCached can apply the cookie if it comes later */
+bool g_bVIPLoaded[MAXPLAYERS + 1];
+
 Cookie g_hCookie;
 
 public Plugin myinfo =
@@ -128,7 +133,7 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 			if (!IsClientInGame(i) || IsFakeClient(i) || !HasFreeVIP(i))
 				continue;
 
-			VIP_RemoveClientVIP2(_, i, false, false);
+			RemoveFreeVIP(i);
 		}
 
 		CPrintToChatAll("{green}[SM] %t\n%t", "FreeVIP Disabled", "FreeVIP Players Needed", playersOnServer, g_iMinPlayers, g_iMinPlayers - playersOnServer);
@@ -140,7 +145,7 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 		if (!IsClientInGame(i) || IsClientSourceTV(i) || IsFakeClient(i) || VIP_IsClientVIP(i))
 			continue;
 
-		VIP_GiveClientVIP(_, i, 0, g_sVIPGroup, false);
+		GiveFreeVIP(i);
 	}
 
 	CPrintToChatAll("{green}[SM] %t", "FreeVIP Enabled Given");
@@ -168,30 +173,59 @@ void CheckAllPlayers()
 		if (!IsClientAuthorized(i))
 			continue;
 
+		/* Who gave it before the reload is unknown: a temporary VIP of the Free VIP group is taken as ours */
+		g_bGaveFreeVIP[i] = IsTemporaryFreeVIPGroup(i);
+
 		VIP_OnClientLoaded(i, VIP_IsClientVIP(i));
 	}
 }
 
 public void VIP_OnClientLoaded(int client, bool isVIP)
 {
-	if (!IsFreeVIPOn())
-	{
-		char cookieValue[6];
-		g_hCookie.Get(client, cookieValue, sizeof(cookieValue));
-		/* Set cookie to false in all clients when vip ends */
-		if (StrEqual(cookieValue, "true"))
-			g_hCookie.Set(client, "false");
-
-		return;
-	}
-
 	if (IsClientSourceTV(client) || IsFakeClient(client))
 		return;
+
+	g_bVIPLoaded[client] = true;
+
+	if (!IsFreeVIPOn())
+	{
+		ResetCookie(client);
+		return;
+	}
 
 	if (!IsClientAuthorized(client))
 		return;
 
 	GiveVIP(client);
+}
+
+/* VIP Core and clientprefs load asynchronously: whichever comes last applies the cookie */
+public void OnClientCookiesCached(int client)
+{
+	if (!g_bVIPLoaded[client])
+		return;
+
+	if (!IsFreeVIPOn())
+		ResetCookie(client);
+	else if (VIP_IsClientVIP(client))
+		SetVIP(client);
+}
+
+public void VIP_OnVIPClientRemoved(int client, const char[] reason, int admin)
+{
+	g_bGaveFreeVIP[client] = false;
+}
+
+/* Set cookie to false in all clients when vip ends */
+void ResetCookie(int client)
+{
+	if (!AreClientCookiesCached(client))
+		return;
+
+	char cookieValue[6];
+	g_hCookie.Get(client, cookieValue, sizeof(cookieValue));
+	if (StrEqual(cookieValue, "true"))
+		g_hCookie.Set(client, "false");
 }
 
 void GiveVIP(int client)
@@ -209,7 +243,19 @@ void GiveVIP(int client)
 	if (GetRealPlayersOnServer() < g_iMinPlayers)
 		return;
 
+	GiveFreeVIP(client);
+}
+
+void GiveFreeVIP(int client)
+{
 	VIP_GiveClientVIP(_, client, 0, g_sVIPGroup, false);
+	g_bGaveFreeVIP[client] = true;
+}
+
+void RemoveFreeVIP(int client)
+{
+	g_bGaveFreeVIP[client] = false;
+	VIP_RemoveClientVIP2(_, client, false, false);
 }
 
 void SetVIP(int client)
@@ -244,13 +290,15 @@ void SetVIP(int client)
 
 public void OnClientDisconnect(int client)
 {
-	if (!IsClientInGame(client) || IsClientSourceTV(client) || IsFakeClient(client))
-		return;
+	g_bVIPLoaded[client] = false;
 
-	if (!HasFreeVIP(client))
+	if (!IsClientInGame(client) || IsClientSourceTV(client) || IsFakeClient(client) || !HasFreeVIP(client))
+	{
+		g_bGaveFreeVIP[client] = false;
 		return;
+	}
 
-	VIP_RemoveClientVIP2(_, client, false, false);
+	RemoveFreeVIP(client);
 }
 
 Action Command_FreeVIP(int client, int args)
@@ -293,8 +341,14 @@ bool IsFreeVIPOn()
 	return true;
 }
 
-/* Temporary VIP (not saved in the database) of the Free VIP group: leaves Test VIP and VIP given by other plugins alone */
+/* Free VIP given by this plugin and still temporary (not saved in the database) */
 bool HasFreeVIP(int client)
+{
+	return g_bGaveFreeVIP[client] && VIP_IsClientVIP(client) && VIP_GetClientID(client) == -1;
+}
+
+/* Temporary VIP of the Free VIP group, whoever gave it */
+bool IsTemporaryFreeVIPGroup(int client)
 {
 	if (!VIP_IsClientVIP(client) || VIP_GetClientID(client) != -1)
 		return false;

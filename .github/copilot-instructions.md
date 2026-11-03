@@ -7,7 +7,7 @@ This repository contains a SourcePawn plugin for SourceMod that implements a **F
 ### Key Features
 - **Time-based VIP events**: Configure start/end timestamps for giveaway periods
 - **Player count thresholds**: Require minimum number of active players
-- **Automatic VIP management**: Grant/revoke VIP based on activity and spectator status
+- **Automatic VIP management**: Grant/revoke temporary VIP based on the number of players
 - **Hostname modification**: Update server name during active giveaway periods
 - **Cookie tracking**: Remember which players have received extended VIP
 - **Native API**: Expose functions for other plugins to query giveaway status
@@ -21,7 +21,6 @@ This repository contains a SourcePawn plugin for SourceMod that implements a **F
 - **Dependencies**:
   - `sourcemod` (core framework)
   - `clientprefs` (cookie system)
-  - `cstrike` (CS:GO/CS2 specific functions)
   - `vip_core` (VIP management system)
   - `multicolors` (chat color formatting)
 
@@ -29,7 +28,7 @@ This repository contains a SourcePawn plugin for SourceMod that implements a **F
 
 ```
 addons/sourcemod/scripting/
-├── VIP_FreeVIPGiveaway.sp          # Main plugin source code (349 lines)
+├── VIP_FreeVIPGiveaway.sp          # Main plugin source code
 └── include/
     └── VIP_FreeVIPGiveaway.inc     # Native function definitions for other plugins
 
@@ -96,7 +95,7 @@ void GiveVIP(int client)     // Custom functions in PascalCase
 ### Core Components
 
 1. **ConVar System** (`OnPluginStart()`):
-   - `sm_freevip_min_players`: Minimum players required (0 = always on)
+   - `sm_freevip_min_players`: Minimum players required (-1 = disabled, 0 = no minimum, given on connect)
    - `sm_freevip_group`: VIP group to assign
    - `sm_freevip_timestamp_start/end`: Active period timestamps
    - `sm_freevip_hostname_prefix`: Server name prefix during events
@@ -119,12 +118,13 @@ void GiveVIP(int client)     // Custom functions in PascalCase
 
 1. **Round Start Check**:
    - Verify current time is within configured start/end timestamps
-   - Count active players (excluding spectators and SourceTV)
-   - If minimum players met: grant VIP to non-VIP active players
-   - If insufficient players: remove temporary VIP from players
+   - Only when `sm_freevip_min_players` is above 0
+   - Count players in game (excluding bots and SourceTV), spectators included
+   - If minimum players met: grant VIP to every non-VIP player
+   - If insufficient players: remove the temporary VIP of the Free VIP group (Test VIP and other plugins' VIP are kept)
 
 2. **Player Connection**:
-   - Automatically grant VIP if conditions are met and player doesn't have VIP
+   - Automatically grant VIP if the minimum players is met and player doesn't have VIP
    - Extend VIP duration for existing VIP players (tracked via cookies)
 
 3. **Hostname Management**:
@@ -142,10 +142,10 @@ ConVar g_Cvar_NewSetting = CreateConVar("sm_freevip_newsetting", "default", "Des
 ```
 
 ### Modifying VIP Conditions
-Key function to modify: `Event_RoundStart()` (lines 105-183)
-- Player counting logic (lines 129-137)
-- VIP assignment loop (lines 141-159)  
-- VIP removal logic (lines 170-176)
+Key function to modify: `Event_RoundStart()`
+- Player counting logic: `GetRealPlayersOnServer()`
+- VIP assignment loop
+- VIP removal logic: `HasFreeVIP()` tells which VIP this plugin gave
 
 ### Adding Native Functions
 1. Add declaration to `VIP_FreeVIPGiveaway.inc`
@@ -178,7 +178,6 @@ db.Query(CallbackFunction, query, clientId);
    - Load on test server with VIP Core plugin
    - Test with different player counts
    - Verify timestamp-based activation/deactivation
-   - Test spectator/active player transitions
 
 ### Key Test Scenarios
 - **Minimum players**: Test below/above threshold behavior
@@ -218,7 +217,7 @@ db.Query(CallbackFunction, query, clientId);
 - Sanitize ConVar inputs where appropriate
 
 ### Admin Permissions
-- Plugin uses `ADMFLAG_CUSTOM1` for VIP flag management
+- Sourcemod flags of VIP players (`ADMFLAG_CUSTOM1`) are set by the VIP_SourcemodFlags plugin, not by this one
 - Ensure proper permission handling for admin commands
 
 ### Error Handling

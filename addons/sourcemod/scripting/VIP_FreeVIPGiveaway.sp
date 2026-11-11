@@ -41,7 +41,7 @@ public Plugin myinfo =
 	name = "[VIP] Free VIP Giveaway",
 	author = "inGame, maxime1907, Dolly",
 	description = "Gives Free VIP for players that are active on server",
-	version = "2.2.0"
+	version = "2.2.1"
 };
 
 public void OnPluginStart()

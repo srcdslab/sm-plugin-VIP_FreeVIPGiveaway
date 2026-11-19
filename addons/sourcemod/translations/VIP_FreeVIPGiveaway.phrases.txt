@@ -9,6 +9,12 @@
 		"de"		"{pink}Gratis-VIP-Aktion {default}ist {green}aktiviert{default}."
 		"pt"		"O {pink}VIP grátis {default}está {green}ativado{default}."
 		"chi"		"{pink}免费VIP赠送活动{default}已{green}开启{default}。"
+		"pl"		"{pink}Darmowe VIP {default}jest {green}włączone{default}."
+		"tr"		"{pink}Bedava VIP {default}{green}etkinleştirildi{default}."
+		"it"		"Il {pink}VIP gratuito {default}è {green}attivato{default}."
+		"ua"		"{pink}Безкоштовний VIP {default}{green}увімкнено{default}."
+		"zho"		"{pink}免費VIP贈送 {default}已{green}開啟{default}。"
+		"cze"		"{pink}VIP zdarma {default}je {green}zapnuto{default}."
 	}
 	"FreeVIP Enabled Given"
 	{
@@ -19,6 +25,12 @@
 		"de"		"{pink}Gratis-VIP-Aktion {default}ist {green}aktiviert{default}. {pink}Aktive Spieler haben Gratis-VIP erhalten."
 		"pt"		"O {pink}VIP grátis {default}está {green}ativado{default}. {pink}Os jogadores ativos receberam VIP grátis."
 		"chi"		"{pink}免费VIP赠送活动{default}已{green}开启{default}。{pink}活跃玩家已获得免费VIP。"
+		"pl"		"{pink}Darmowe VIP {default}jest {green}włączone{default}. {pink}Aktywni gracze otrzymali darmowe VIP."
+		"tr"		"{pink}Bedava VIP {default}{green}etkinleştirildi{default}. {pink}Aktif oyuncular bedava VIP aldı."
+		"it"		"Il {pink}VIP gratuito {default}è {green}attivato{default}. {pink}I giocatori attivi hanno ricevuto il VIP gratuito."
+		"ua"		"{pink}Безкоштовний VIP {default}{green}увімкнено{default}. {pink}Активні гравці отримали безкоштовний VIP."
+		"zho"		"{pink}免費VIP贈送 {default}已{green}開啟{default}。{pink}活躍玩家已獲得免費VIP。"
+		"cze"		"{pink}VIP zdarma {default}je {green}zapnuto{default}. {pink}Aktivní hráči dostali VIP zdarma."
 	}
 	"FreeVIP Disabled"
 	{
@@ -29,6 +41,12 @@
 		"de"		"{pink}Gratis-VIP-Aktion {default}ist {red}deaktiviert{default}."
 		"pt"		"O {pink}VIP grátis {default}está {red}desativado{default}."
 		"chi"		"{pink}免费VIP赠送活动{default}已{red}关闭{default}。"
+		"pl"		"{pink}Darmowe VIP {default}jest {red}wyłączone{default}."
+		"tr"		"{pink}Bedava VIP {default}{red}devre dışı bırakıldı{default}."
+		"it"		"Il {pink}VIP gratuito {default}è {red}disattivato{default}."
+		"ua"		"{pink}Безкоштовний VIP {default}{red}вимкнено{default}."
+		"zho"		"{pink}免費VIP贈送 {default}已{red}關閉{default}。"
+		"cze"		"{pink}VIP zdarma {default}je {red}vypnuto{default}."
 	}
 	"FreeVIP Players Needed"
 	{
@@ -40,5 +58,11 @@
 		"de"		"Spieler online: {green}{1} {default}| Benötigte Spieler: {green}{2} {default}| Fehlende Spieler: {green}+{3}"
 		"pt"		"Jogadores online: {green}{1} {default}| Jogadores necessários: {green}{2} {default}| Faltam: {green}+{3}"
 		"chi"		"在线玩家：{green}{1} {default}| 所需玩家：{green}{2} {default}| 还需玩家：{green}+{3}"
+		"pl"		"Graczy online: {green}{1} {default}| Wymagani gracze: {green}{2} {default}| Brakuje graczy: {green}+{3}"
+		"tr"		"Çevrimiçi oyuncu: {green}{1} {default}| Gereken oyuncu: {green}{2} {default}| Eksik oyuncu: {green}+{3}"
+		"it"		"Giocatori online: {green}{1} {default}| Giocatori richiesti: {green}{2} {default}| Ne mancano: {green}+{3}"
+		"ua"		"Гравців онлайн: {green}{1} {default}| Потрібно гравців: {green}{2} {default}| Не вистачає: {green}+{3}"
+		"zho"		"線上玩家：{green}{1} {default}| 所需玩家：{green}{2} {default}| 還差玩家：{green}+{3}"
+		"cze"		"Hráči online: {green}{1} {default}| Potřební hráči: {green}{2} {default}| Chybí hráčů: {green}+{3}"
 	}
 }
